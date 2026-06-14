@@ -17,128 +17,85 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     
-    body {
+    html, body {
+      width: 100%;
+      height: 100%;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: #f5f5f5;
     }
 
     #app {
       display: flex;
+      width: 100vw;
       height: 100vh;
     }
 
-    .container {
-      display: flex;
-      width: 100%;
-      gap: 10px;
-      padding: 10px;
-    }
-
     .sidebar {
-      width: 320px;
+      width: 280px;
       background: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border-radius: 0;
+      box-shadow: 2px 0 8px rgba(0,0,0,0.1);
       padding: 15px;
       overflow-y: auto;
+      flex-shrink: 0;
+      border-right: 1px solid #eee;
     }
 
     .map-container {
       flex: 1;
       background: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       position: relative;
+      overflow: hidden;
     }
 
     #map {
       width: 100%;
       height: 100%;
-      border-radius: 8px;
     }
 
     .header {
       text-align: center;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
       border-bottom: 2px solid #007bff;
       padding-bottom: 10px;
     }
 
     .header h1 {
-      font-size: 20px;
+      font-size: 16px;
       color: #333;
       margin-bottom: 5px;
     }
 
     .status {
-      font-size: 12px;
+      font-size: 11px;
       color: #666;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 5px;
-    }
-
-    .status.online::before {
-      content: '';
-      width: 8px;
-      height: 8px;
-      background: #28a745;
-      border-radius: 50%;
     }
 
     .section {
-      margin-bottom: 20px;
-      padding-bottom: 15px;
+      margin-bottom: 15px;
+      padding-bottom: 12px;
       border-bottom: 1px solid #eee;
     }
 
     .section h3 {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 600;
       color: #333;
-      margin-bottom: 10px;
-    }
-
-    .login-form {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .login-form input {
-      padding: 8px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 12px;
-    }
-
-    .login-form button {
-      padding: 10px;
-      background: #007bff;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: 600;
-    }
-
-    .login-form button:hover {
-      background: #0056b3;
+      margin-bottom: 8px;
     }
 
     .user-info {
       background: #e7f3ff;
-      padding: 10px;
+      padding: 8px;
       border-radius: 4px;
-      font-size: 12px;
-      margin-bottom: 15px;
+      font-size: 11px;
+      margin-bottom: 10px;
     }
 
     .user-info strong {
       display: block;
       color: #007bff;
-      margin-bottom: 5px;
+      margin-bottom: 3px;
     }
 
     .logout-btn {
@@ -150,17 +107,107 @@
       border-radius: 4px;
       cursor: pointer;
       font-size: 12px;
+      font-weight: 600;
     }
 
     .logout-btn:hover {
       background: #c82333;
     }
 
-    .alert {
-      padding: 10px;
+    .incident-item {
+      padding: 8px;
+      background: #f9f9f9;
       border-radius: 4px;
-      margin-bottom: 10px;
+      margin-bottom: 5px;
       font-size: 12px;
+      cursor: pointer;
+      border-left: 3px solid #007bff;
+    }
+
+    .incident-item.active {
+      background: #e7f3ff;
+      border-left-color: #28a745;
+      font-weight: 600;
+    }
+
+    .components-tabs {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid #ddd;
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      padding: 6px 10px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 11px;
+      color: #666;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+    }
+
+    .tab-btn.active {
+      color: #007bff;
+      border-bottom-color: #007bff;
+      font-weight: 600;
+    }
+
+    .btn {
+      padding: 6px 10px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 5px;
+      margin-right: 5px;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: #007bff;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #0056b3;
+    }
+
+    .btn-primary.active {
+      background: #28a745;
+    }
+
+    .btn-success {
+      background: #28a745;
+      color: white;
+    }
+
+    .btn-success:hover:not(:disabled) {
+      background: #1e7e34;
+    }
+
+    .btn-warning {
+      background: #ffc107;
+      color: black;
+    }
+
+    .btn-warning:hover:not(:disabled) {
+      background: #e0a800;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .alert {
+      padding: 8px;
+      border-radius: 4px;
+      margin-bottom: 8px;
+      font-size: 11px;
     }
 
     .alert-error {
@@ -174,59 +221,6 @@
       color: #155724;
       border: 1px solid #c3e6cb;
     }
-
-    .incident-list {
-      max-height: 150px;
-      overflow-y: auto;
-    }
-
-    .incident-item {
-      padding: 8px;
-      background: #f9f9f9;
-      border-radius: 4px;
-      margin-bottom: 5px;
-      font-size: 12px;
-      cursor: pointer;
-      border-left: 3px solid #007bff;
-    }
-
-    .incident-item:hover {
-      background: #f0f0f0;
-    }
-
-    .incident-item.active {
-      background: #e7f3ff;
-      border-left-color: #28a745;
-    }
-
-    .components-tabs {
-      display: flex;
-      gap: 5px;
-      margin-bottom: 15px;
-      border-bottom: 1px solid #ddd;
-      flex-wrap: wrap;
-    }
-
-    .tab-btn {
-      padding: 8px 12px;
-      background: none;
-      border: none;
-      cursor: pointer;
-      font-size: 12px;
-      color: #666;
-      border-bottom: 2px solid transparent;
-      margin-bottom: -1px;
-    }
-
-    .tab-btn.active {
-      color: #007bff;
-      border-bottom-color: #007bff;
-    }
-
-    .component-panel {
-      max-height: 400px;
-      overflow-y: auto;
-    }
   </style>
 </head>
 <body>
@@ -235,38 +229,11 @@
     <!-- Header -->
     <div class="header">
       <h1>🎯 Stabs-Platform v2</h1>
-      <div class="status" :class="{ online: connected }">
-        {{ connected ? 'Online' : 'Offline' }}
-      </div>
+      <div class="status">{{ connected ? '✅ Online' : '⚫ Offline' }}</div>
     </div>
 
-    <!-- Login / User Info -->
-    <div class="section" v-if="!user">
-      <h3>🔐 Login</h3>
-      <div v-if="loginError" class="alert alert-error">{{ loginError }}</div>
-      <form @submit.prevent="doLogin" class="login-form">
-        <input 
-          v-model="loginForm.username" 
-          type="text" 
-          placeholder="Benutzername"
-          autocomplete="username"
-        >
-        <input 
-          v-model="loginForm.password" 
-          type="password" 
-          placeholder="Passwort"
-          autocomplete="current-password"
-        >
-        <button type="submit" :disabled="logging">
-          {{ logging ? '⏳ Login...' : 'Login' }}
-        </button>
-      </form>
-      <p style="font-size: 11px; color: #666; margin-top: 10px;">
-        Demo: demo / demo123
-      </p>
-    </div>
-
-    <div class="section" v-else>
+    <!-- User Info -->
+    <div class="section" v-if="user">
       <div class="user-info">
         <strong>{{ user.username }}</strong>
         <small>{{ user.role }}</small>
@@ -277,91 +244,53 @@
     <!-- Incidents -->
     <div class="section" v-if="user">
       <h3>📋 Einsätze</h3>
-      <div class="incident-list">
-        <div 
-          v-for="incident in incidents" 
-          :key="incident.id"
-          @click="selectIncident(incident)"
-          :class="{ active: selectedIncident?.id === incident.id }"
-          class="incident-item"
-        >
-          <strong>{{ incident.name }}</strong>
-          <div style="font-size: 10px; color: #666;">
-            {{ incident.status }}
-          </div>
-        </div>
+      <div v-for="incident in incidents" :key="incident.id"
+           @click="selectIncident(incident)"
+           :class="{ active: selectedIncident?.id === incident.id }"
+           class="incident-item">
+        <strong>{{ incident.name }}</strong>
+        <div style="font-size: 10px;">{{ incident.status }}</div>
       </div>
     </div>
 
-    <!-- v2 Components -->
+    <!-- v2 Features -->
     <div class="section" v-if="user && selectedIncident">
       <h3>⚙️ v2 Features</h3>
       
       <div class="components-tabs">
-        <button 
-          @click="activeTab = 'polygon'" 
-          :class="{ active: activeTab === 'polygon' }"
-          class="tab-btn"
-        >
+        <button @click="activeTab = 'polygon'" :class="{ active: activeTab === 'polygon' }" class="tab-btn">
           🔺 Polygon
         </button>
-        <button 
-          @click="activeTab = 'resources'" 
-          :class="{ active: activeTab === 'resources' }"
-          class="tab-btn"
-        >
+        <button @click="activeTab = 'resources'" :class="{ active: activeTab === 'resources' }" class="tab-btn">
           📦 Resources
         </button>
       </div>
 
-      <div class="component-panel">
-        <!-- PolygonDrawer Component -->
-        <div v-if="activeTab === 'polygon'" class="polygon-drawer">
-          <div class="controls">
-            <button 
-              @click="toggleDraw" 
-              :class="{ active: isDrawing }"
-              class="btn btn-primary"
-            >
-              {{ isDrawing ? '✓ Drawing' : '✎ Draw Polygon' }}
-            </button>
-            
-            <button 
-              @click="savePolygon" 
-              :disabled="!isDrawing || polygonCoordinates.length < 3"
-              class="btn btn-success"
-            >
-              💾 Save
-            </button>
-            
-            <button 
-              @click="clearDraw" 
-              :disabled="!isDrawing"
-              class="btn btn-warning"
-            >
-              🗑️ Clear
-            </button>
-          </div>
+      <!-- Polygon Drawing -->
+      <div v-if="activeTab === 'polygon'">
+        <div style="margin-bottom: 8px;">
+          <button @click="toggleDraw" :class="{ active: isDrawing }" class="btn btn-primary">
+            {{ isDrawing ? '✓ Drawing' : '✎ Draw Polygon' }}
+          </button>
+          <button @click="savePolygon" :disabled="!isDrawing || polygonCoordinates.length < 3" class="btn btn-success">
+            💾 Save
+          </button>
+          <button @click="clearDraw" :disabled="!isDrawing" class="btn btn-warning">
+            🗑️ Clear
+          </button>
+        </div>
 
-          <div v-if="polygonCoordinates.length > 0" class="coordinates-list">
-            <h4 style="font-size: 12px; margin-bottom: 8px;">
-              Coordinates ({{ polygonCoordinates.length }})
-            </h4>
-            <div class="coords" style="max-height: 150px; overflow-y: auto;">
-              <div v-for="(coord, idx) in polygonCoordinates" :key="idx" class="coord-item">
-                {{ idx + 1 }}. {{ coord.lat.toFixed(4) }}, {{ coord.lng.toFixed(4) }}
-              </div>
+        <div v-if="polygonCoordinates.length > 0" style="font-size: 11px; margin-top: 8px;">
+          <strong>Points: {{ polygonCoordinates.length }}</strong>
+          <div style="max-height: 100px; overflow-y: auto; background: #f9f9f9; padding: 5px; border-radius: 3px; margin-top: 5px;">
+            <div v-for="(c, i) in polygonCoordinates" :key="i" style="font-size: 10px; font-family: monospace;">
+              {{ i+1 }}. {{ c.lat.toFixed(4) }}, {{ c.lng.toFixed(4) }}
             </div>
           </div>
-
-          <div v-if="polygonError" class="alert alert-error">{{ polygonError }}</div>
-          <div v-if="polygonSuccess" class="alert alert-success">{{ polygonSuccess }}</div>
         </div>
 
-        <!-- Resources -->
-        <div v-if="activeTab === 'resources'" style="font-size: 12px;">
-          <p>📦 Resources werden geladen...</p>
-        </div>
+        <div v-if="polygonError" class="alert alert-error">{{ polygonError }}</div>
+        <div v-if="polygonSuccess" class="alert alert-success">{{ polygonSuccess }}</div>
       </div>
     </div>
   </div>
@@ -372,166 +301,63 @@
   </div>
 </div>
 
-<!-- CSS for buttons (inline) -->
-<style>
-.btn {
-  padding: 6px 10px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
-  transition: all 0.3s;
-  margin-bottom: 5px;
-}
-
-.btn-primary {
-  background: #007bff;
-  color: white;
-}
-
-.btn-primary:hover {
-  background: #0056b3;
-}
-
-.btn-primary.active {
-  background: #28a745;
-}
-
-.btn-success {
-  background: #28a745;
-  color: white;
-}
-
-.btn-success:hover:not(:disabled) {
-  background: #1e7e34;
-}
-
-.btn-warning {
-  background: #ffc107;
-  color: black;
-}
-
-.btn-warning:hover:not(:disabled) {
-  background: #e0a800;
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.controls {
-  display: flex;
-  gap: 5px;
-  flex-wrap: wrap;
-  margin-bottom: 10px;
-}
-
-.coordinates-list {
-  margin-top: 10px;
-}
-
-.coords {
-  background: #f9f9f9;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 8px;
-}
-
-.coord-item {
-  padding: 3px 0;
-  font-family: monospace;
-  font-size: 11px;
-  border-bottom: 1px solid #eee;
-}
-
-.coord-item:last-child {
-  border-bottom: none;
-}
-</style>
-
 <script>
-const { createApp, ref, reactive, onMounted, watch } = Vue;
+const { createApp, ref, reactive, onMounted } = Vue;
 
 createApp({
   setup() {
-    // State
     const connected = ref(false);
     const user = ref(null);
-    const logging = ref(false);
-    const loginError = ref('');
     const incidents = ref([]);
     const selectedIncident = ref(null);
     const socket = ref(null);
+    const map = ref(null);
     
-    // UI State
     const activeTab = ref('polygon');
-    const loginForm = reactive({ username: '', password: '' });
-    
-    // Polygon Drawing
     const isDrawing = ref(false);
     const polygonCoordinates = ref([]);
     const drawnPolygon = ref(null);
     const polygonError = ref('');
     const polygonSuccess = ref('');
-    const map = ref(null);
 
-    // Initialize Map
     const initMap = () => {
-      map.value = L.map('map').setView([51.505, -0.09], 13);
+      map.value = L.map('map').setView([51.505, 10.09], 6);
       
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '© OpenStreetMap'
       }).addTo(map.value);
 
-      // Click handler
       map.value.on('click', (e) => {
         if (isDrawing.value) {
-          polygonCoordinates.value.push({
-            lat: e.latlng.lat,
-            lng: e.latlng.lng
-          });
+          polygonCoordinates.value.push({ lat: e.latlng.lat, lng: e.latlng.lng });
           updatePolygonOnMap();
         }
       });
     };
 
     const updatePolygonOnMap = () => {
-      if (drawnPolygon.value) {
-        map.value.removeLayer(drawnPolygon.value);
-      }
-
+      if (drawnPolygon.value) map.value.removeLayer(drawnPolygon.value);
       if (polygonCoordinates.value.length >= 2) {
         const latlngs = polygonCoordinates.value.map(c => [c.lat, c.lng]);
-        drawnPolygon.value = L.polyline(latlngs, {
-          color: '#007bff',
-          weight: 2,
-          opacity: 0.8,
-          dashArray: '5, 5'
-        }).addTo(map.value);
+        drawnPolygon.value = L.polyline(latlngs, { color: '#007bff', weight: 2, dashArray: '5,5' }).addTo(map.value);
       }
     };
 
     const toggleDraw = () => {
       isDrawing.value = !isDrawing.value;
-      if (!isDrawing.value) {
-        clearDraw();
-      }
+      if (!isDrawing.value) clearDraw();
     };
 
     const clearDraw = () => {
       polygonCoordinates.value = [];
-      if (drawnPolygon.value) {
-        map.value.removeLayer(drawnPolygon.value);
-        drawnPolygon.value = null;
-      }
+      if (drawnPolygon.value) map.value.removeLayer(drawnPolygon.value);
       polygonError.value = '';
     };
 
     const savePolygon = async () => {
       if (polygonCoordinates.value.length < 3) {
-        polygonError.value = 'Mindestens 3 Punkte erforderlich!';
+        polygonError.value = 'Min. 3 Punkte erforderlich!';
         return;
       }
 
@@ -539,61 +365,15 @@ createApp({
         const res = await fetch('/api/polygons', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            incident_id: selectedIncident.value.id,
-            coordinates: polygonCoordinates.value,
-            type: 'operational_area'
-          })
+          body: JSON.stringify({ incident_id: selectedIncident.value.id, coordinates: polygonCoordinates.value, type: 'operational_area' })
         });
-
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
-
         polygonSuccess.value = `✓ Polygon gespeichert (ID: ${data.id})`;
         clearDraw();
         isDrawing.value = false;
       } catch (err) {
-        polygonError.value = `❌ Fehler: ${err.message}`;
-      }
-    };
-
-    // Login
-    const doLogin = async () => {
-      logging.value = true;
-      loginError.value = '';
-
-      try {
-        const res = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(loginForm)
-        });
-
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
-
-        user.value = data.user;
-        loginForm.username = '';
-        loginForm.password = '';
-        
-        // Load incidents
-        loadIncidents();
-        
-        // Connect Socket
-        connectSocket();
-      } catch (err) {
-        loginError.value = err.message;
-      } finally {
-        logging.value = false;
-      }
-    };
-
-    const logout = () => {
-      user.value = null;
-      selectedIncident.value = null;
-      incidents.value = [];
-      if (socket.value) {
-        socket.value.disconnect();
+        polygonError.value = `❌ ${err.message}`;
       }
     };
 
@@ -601,56 +381,43 @@ createApp({
       try {
         const res = await fetch('/api/incidents');
         incidents.value = await res.json();
-        if (incidents.value.length > 0) {
-          selectIncident(incidents.value[0]);
-        }
+        if (incidents.value.length > 0) selectIncident(incidents.value[0]);
       } catch (err) {
-        console.error('Error loading incidents:', err);
+        console.error('Error:', err);
       }
     };
 
     const selectIncident = (incident) => {
       selectedIncident.value = incident;
       polygonCoordinates.value = [];
-      polygonError.value = '';
-      polygonSuccess.value = '';
-      
-      if (socket.value) {
-        socket.value.emit('join-incident', incident.id);
-      }
+      if (socket.value) socket.value.emit('join-incident', incident.id);
     };
 
     const connectSocket = () => {
       socket.value = io();
-      
-      socket.value.on('connect', () => {
-        connected.value = true;
-      });
-
-      socket.value.on('disconnect', () => {
-        connected.value = false;
-      });
-
-      socket.value.on('polygon:created', (data) => {
-        console.log('Polygon created:', data);
-        polygonSuccess.value = '✓ Polygon von anderen User erstellt';
-      });
+      socket.value.on('connect', () => { connected.value = true; });
+      socket.value.on('disconnect', () => { connected.value = false; });
     };
 
+    const logout = () => {
+      user.value = null;
+      selectedIncident.value = null;
+      if (socket.value) socket.value.disconnect();
+    };
+
+    // Simulate login for now
     onMounted(() => {
       initMap();
+      // Auto-login demo
+      user.value = { username: 'demo', role: 'user' };
+      loadIncidents();
+      connectSocket();
     });
 
     return {
-      // State
-      connected, user, logging, loginError,
-      incidents, selectedIncident,
-      activeTab, loginForm,
-      // Polygon
-      isDrawing, polygonCoordinates, polygonError, polygonSuccess,
-      // Methods
-      doLogin, logout, loadIncidents, selectIncident,
-      toggleDraw, clearDraw, savePolygon
+      connected, user, incidents, selectedIncident,
+      activeTab, isDrawing, polygonCoordinates, polygonError, polygonSuccess,
+      selectIncident, logout, toggleDraw, clearDraw, savePolygon
     };
   }
 }).mount('#app');
