@@ -28,7 +28,6 @@
     .card.active { border-left-color: #28a745; background: #f0f8f0; }
     .badge { display: inline-block; padding: 4px 10px; background: #007bff; color: white; border-radius: 12px; font-size: 11px; font-weight: bold; margin-right: 5px; }
     .badge.success { background: #28a745; }
-    .badge.danger { background: #dc3545; }
     .error { color: #dc3545; padding: 10px; background: #f8d7da; border-radius: 4px; margin: 10px 0; }
     .success { color: #155724; padding: 10px; background: #d4edda; border-radius: 4px; margin: 10px 0; }
     .divider { border-top: 1px solid #ddd; margin: 15px 0; }
@@ -101,7 +100,7 @@
 
       <div class="footer">
         <p>🔒 DSGVO-konform</p>
-        <p>🔐 Verschlüsselt (HTTPS/TLS)</p>
+        <p>🔐 Verschlüsselt (HTTP/TLS)</p>
         <p>📊 Audit-Log aktiviert</p>
       </div>
     </div>
@@ -127,7 +126,8 @@
         const login = ref({ username: 'demo', password: 'demo123' });
         const newMarker = ref({ type: 'friendly', label: '' });
 
-        const API = window.location.protocol + '//' + window.location.host + '/api';
+        // API-Pfad: über Nginx Proxy oder direkt localhost
+        const API = '/api';
 
         const doLogin = async () => {
           try {
@@ -148,6 +148,7 @@
             await loadIncidents();
           } catch (e) {
             error.value = 'Fehler: ' + e.message;
+            console.error('Login error:', e);
           }
         };
 
@@ -164,7 +165,8 @@
             const res = await fetch(API + '/incidents');
             incidents.value = await res.json();
           } catch (e) {
-            console.error('Error:', e);
+            console.error('Error loading incidents:', e);
+            error.value = 'Fehler beim Laden der Lagen';
           }
         };
 
@@ -181,7 +183,7 @@
             const data = await res.json();
             resources.value = data.resources || [];
           } catch (e) {
-            console.error('Error:', e);
+            console.error('Error loading resources:', e);
           }
         };
 
