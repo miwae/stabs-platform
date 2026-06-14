@@ -1,63 +1,97 @@
+version: '3.9'
+
 services:
+  # PostgreSQL Database with encryption
   postgres:
-    image: postgis/postgis:16-3.4
-    container_name: stabs-platform-postgres
+    image: postgres:15-alpine
     environment:
       POSTGRES_USER: stabs_user
       POSTGRES_PASSWORD: ${DB_PASSWORD:-StabsSecure2026!}
-      POSTGRES_DB: stabs_db
-    volumes:
-      - stabs_postgres_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      POSTGRES_DB: stabs_ocr
     ports:
       - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./services/database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - stabs
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U stabs_user"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  redis:
-    image: redis:7-alpine
-    container_name: stabs-platform-redis
+  # Python OCR Service
+  ocr-service:
+    build:
+      context: ./services/ocr
+      dockerfile: Dockerfile
+    environment:
+      TESSDATA_PREFIX: /usr/share/tesseract-ocr/4.00/tessdata
+      PYTHONUNBUFFERED: 1
     ports:
-      - "6379:6379"
+      - "5000:5000"
     volumes:
-      - stabs_redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - ./services/ocr:/app
+      - ./data/uploads:/tmp/uploads
+    networks:
+      - stabs
+    depends_on:
+      - postgres
 
+  # Node.js API Server
   api:
     build:
       context: ./api
       dockerfile: Dockerfile
-    container_name: stabs-platform-api
     environment:
-      NODE_ENV: production
-      PORT: 3000
-      DATABASE_URL: postgresql://stabs_user:${DB_PASSWORD:-StabsSecure2026!}@postgres:5432/stabs_db
-      REDIS_URL: redis://redis:6379
-      JWT_SECRET: ${JWT_SECRET:-StabsJWT2026Secret!}
+      DATABASE_URL: postgresql://stabs_user:${DB_PASSWORD:-StabsSecure2026!}@postgres:5432/stabs_ocr
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-your-encryption-key-here}
+      JWT_SECRET: ${JWT_SECRET:-your-jwt-secret-here}
+      NODE_ENV: development
+      OCR_SERVICE_URL: http://ocr-service:5000
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./api:/app
+      - /app/node_modules
+    networks:
+      - stabs
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_healthy
+      ocr-service:
+        condition: service_started
+
+  # Vue.js Frontend (Development)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
     ports:
-      - "3000:3000"
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - stabs
+    environment:
+      VITE_API_URL: http://localhost:3000
+
+  # Redis for caching (optional)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - stabs
+    volumes:
+      - redis_data:/data
 
 volumes:
-  stabs_postgres_data:
-  stabs_redis_data:
+  postgres_data:
+  redis_data:
 
 networks:
-  default:
-    name: stabs-network
+  stabs:
+    driver: bridge
