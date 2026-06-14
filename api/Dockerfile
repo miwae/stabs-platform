@@ -2,17 +2,17 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy package.json FIRST
-COPY package.json .
+# Copy package files
+COPY package*.json ./
 
-# npm install (kein package-lock.json vorhanden)
-RUN npm install
+# Install dependencies
+RUN npm install --production
 
-# Then copy everything else
+# Copy application code
 COPY . .
 
 # Health check
-HEALTHCHECK --interval=10s --timeout=5s --start-period=10s --retries=3 \
+HEALTHCHECK --interval=10s --timeout=5s --start-period=15s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3000/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
 
 EXPOSE 3000
