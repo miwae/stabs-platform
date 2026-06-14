@@ -7,20 +7,30 @@ const crypto = require('crypto');
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
-  cors: { origin: "*", methods: ["GET", "POST"], allowedHeaders: ["Content-Type", "Authorization"] },
+  cors: { 
+    origin: "*",
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"]
+  },
   transports: ['websocket', 'polling']
 });
 
-// Middleware
+// CORS Middleware BEFORE other middleware
 app.use((req, res, next) => {
+  // Allow all origins
   res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.header('X-Content-Type-Options', 'nosniff');
-  res.header('X-Frame-Options', 'SAMEORIGIN');
-  if (req.method === 'OPTIONS') return res.sendStatus(200);
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, HEAD');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.header('Access-Control-Max-Age', '3600');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  
   next();
 });
+
 app.use(express.json());
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
@@ -66,6 +76,7 @@ app.post('/auth/login', async (req, res) => {
     await auditLog(user.id, 'LOGIN_SUCCESS', 'users', user.id, {}, req.ip);
     res.json({ token, user });
   } catch (err) {
+    console.error('Login error:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -79,6 +90,7 @@ app.get('/incidents', async (req, res) => {
     );
     res.json(r.rows);
   } catch (err) {
+    console.error('Incidents error:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -97,6 +109,7 @@ app.get('/incidents/:id', async (req, res) => {
       markers: markers.rows
     });
   } catch (err) {
+    console.error('Incident details error:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -108,7 +121,7 @@ io.on('connection', (socket) => {
   socket.on('join-incident', (incidentId, callback) => {
     socket.join(`incident:${incidentId}`);
     console.log(`📍 Socket ${socket.id} joined incident ${incidentId}`);
-    callback({ ok: true });
+    if (callback) callback({ ok: true });
   });
 
   socket.on('resource:update', async (data) => {
@@ -126,9 +139,15 @@ io.on('connection', (socket) => {
   });
 });
 
-server.listen(3000, () => {
+// Error handler
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  res.status(500).json({ error: 'Internal Server Error' });
+});
+
+server.listen(3000, '0.0.0.0', () => {
   console.log('🎯 Stabs-API running on port 3000');
-  console.log('🔒 DSGVO-compliant • Audit-Logging • WebSocket enabled');
+  console.log('🔒 DSGVO-compliant • CORS enabled • Audit-Logging');
 });
 
 module.exports = { app, server, io };
