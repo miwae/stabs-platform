@@ -1,0 +1,54 @@
+name: Deploy Stabs-Platform
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'api/**'
+      - 'frontend/**'
+      - 'docker-compose.yml'
+      - 'deployment.sh'
+      - 'init.sql'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Deploy to server
+      env:
+        DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+        SERVER_IP: ${{ secrets.SERVER_IP }}
+      run: |
+        # Add SSH key
+        mkdir -p ~/.ssh
+        echo "$DEPLOY_KEY" > ~/.ssh/deploy_key
+        chmod 600 ~/.ssh/deploy_key
+        
+        # SSH config
+        cat > ~/.ssh/config << EOF
+        Host stabs-server
+          HostName $SERVER_IP
+          User root
+          IdentityFile ~/.ssh/deploy_key
+          StrictHostKeyChecking no
+          UserKnownHostsFile=/dev/null
+        EOF
+        
+        # Deploy
+        ssh stabs-server << 'DEPLOY_SCRIPT'
+        cd /home/stabs-platform
+        git pull origin main
+        bash deployment.sh planungs-tool.de miwae@outlook.de
+        DEPLOY_SCRIPT
+    
+    - name: Notify deployment
+      if: success()
+      run: echo "✅ Stabs-Platform deployed successfully!"
+    
+    - name: Handle deployment error
+      if: failure()
+      run: echo "❌ Deployment failed - check server logs"
