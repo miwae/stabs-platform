@@ -15,25 +15,26 @@ const io = socketIo(server, {
   transports: ['websocket', 'polling']
 });
 
+// Store references for routes
+app.set('db', new Pool({ connectionString: process.env.DATABASE_URL }));
+app.set('io', io);
+
 // CORS Middleware BEFORE other middleware
 app.use((req, res, next) => {
-  // Allow all origins
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, HEAD');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
   res.header('Access-Control-Max-Age', '3600');
   
-  // Handle preflight requests
   if (req.method === 'OPTIONS') {
     return res.sendStatus(200);
   }
-  
   next();
 });
 
 app.use(express.json());
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const pool = app.get('db');
 
 // Audit-Logging
 async function auditLog(userId, action, entityType, entityId, details, ip) {
@@ -49,7 +50,7 @@ async function auditLog(userId, action, entityType, entityId, details, ip) {
 
 // Health Check
 app.get('/health', (req, res) => {
-  res.json({ ok: true, version: '1.0.0', timestamp: new Date() });
+  res.json({ ok: true, version: '2.0.0-dev', timestamp: new Date() });
 });
 
 // Login Endpoint
@@ -114,6 +115,10 @@ app.get('/incidents/:id', async (req, res) => {
   }
 });
 
+// Route: Polygons (v2 feature)
+const polygonsRouter = require('./routes/polygons');
+app.use('/polygons', polygonsRouter);
+
 // WebSocket Connections
 io.on('connection', (socket) => {
   console.log(`🔗 Socket connected: ${socket.id}`);
@@ -146,7 +151,8 @@ app.use((err, req, res, next) => {
 });
 
 server.listen(3000, '0.0.0.0', () => {
-  console.log('🎯 Stabs-API running on port 3000');
+  console.log('🎯 Stabs-API v2.0.0-dev running on port 3000');
+  console.log('✨ v2 Features: Polygon Drawing, GPS Tracking, PDF Reports');
   console.log('🔒 DSGVO-compliant • CORS enabled • Audit-Logging');
 });
 
