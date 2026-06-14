@@ -1,161 +1,124 @@
 const express = require('express');
-const http = require('http');
-const socketIo = require('socket.io');
+const cors = require('cors');
+const dotenv = require('dotenv');
+const jwt = require('jsonwebtoken');
 const { Pool } = require('pg');
-const crypto = require('crypto');
+
+dotenv.config();
 
 const app = express();
-const server = http.createServer(app);
-const io = socketIo(server, {
-  path: '/api/socket.io/',
-  cors: { 
-    origin: "*",
-    methods: ["GET", "POST", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"]
-  },
-  transports: ['websocket', 'polling']
+const PORT = process.env.PORT || 3000;
+
+// Middleware
+app.use(cors());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// Database pool
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
 });
 
-// Store references for routes
-app.set('db', new Pool({ connectionString: process.env.DATABASE_URL }));
-app.set('io', io);
-
-// CORS Middleware BEFORE other middleware
+// Logger middleware
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, HEAD');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-  res.header('Access-Control-Max-Age', '3600');
-  
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
   next();
 });
 
-app.use(express.json());
+// JWT Auth middleware
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
 
-const pool = app.get('db');
+  if (!token) return res.sendStatus(401);
 
-// Audit-Logging
-async function auditLog(userId, action, entityType, entityId, details, ip) {
-  try {
-    await pool.query(
-      'INSERT INTO audit_log (user_id, action, entity_type, entity_id, details, ip_address) VALUES ($1, $2, $3, $4, $5, $6)',
-      [userId, action, entityType, entityId, JSON.stringify(details), ip || '127.0.0.1']
-    );
-  } catch (e) {
-    console.error('Audit error:', e);
-  }
-}
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) return res.sendStatus(403);
+    req.user = user;
+    next();
+  });
+};
 
-// Health Check
+// Health check
 app.get('/health', (req, res) => {
-  res.json({ ok: true, version: '2.0.0-dev', timestamp: new Date() });
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Login Endpoint
-app.post('/auth/login', async (req, res) => {
+// Login endpoint (for testing)
+app.post('/auth/login', (req, res) => {
+  const token = jwt.sign({ user_id: 'demo-user' }, process.env.JWT_SECRET, {
+    expiresIn: '24h',
+  });
+  res.json({ token });
+});
+
+// Protected routes
+app.get('/api/health', authenticateToken, (req, res) => {
+  res.json({ status: 'authenticated', user_id: req.user.user_id });
+});
+
+// Document upload endpoint
+app.post('/api/documents/upload', authenticateToken, async (req, res) => {
   try {
-    const { username, password } = req.body;
-    if (!username || !password) {
-      return res.status(400).json({ error: 'Username and password required' });
+    const { file_data, file_name } = req.body;
+    
+    if (!file_data || !file_name) {
+      return res.status(400).json({ error: 'Missing file_data or file_name' });
     }
 
-    const r = await pool.query(
-      'SELECT id, username, role FROM users WHERE username=$1 AND password_hash=$2',
-      [username, password]
-    );
-
-    if (!r.rows.length) {
-      await auditLog(null, 'LOGIN_FAILED', 'users', null, { username }, req.ip);
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    const user = r.rows[0];
-    const token = crypto.randomBytes(32).toString('hex');
-    
-    await auditLog(user.id, 'LOGIN_SUCCESS', 'users', user.id, {}, req.ip);
-    res.json({ token, user });
-  } catch (err) {
-    console.error('Login error:', err);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Get all Incidents
-app.get('/incidents', async (req, res) => {
-  try {
-    const r = await pool.query(
-      'SELECT id, name, status, created_at FROM incidents WHERE status != $1 LIMIT 50',
-      ['deleted']
-    );
-    res.json(r.rows);
-  } catch (err) {
-    console.error('Incidents error:', err);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Get Incident Details
-app.get('/incidents/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const incident = await pool.query('SELECT * FROM incidents WHERE id = $1', [id]);
-    const resources = await pool.query('SELECT * FROM resources WHERE incident_id = $1', [id]);
-    const markers = await pool.query('SELECT * FROM markers WHERE incident_id = $1', [id]);
-    
+    // TODO: Save to database and trigger OCR
     res.json({
-      incident: incident.rows[0] || null,
-      resources: resources.rows,
-      markers: markers.rows
+      success: true,
+      message: 'Document uploaded successfully',
+      filename: file_name,
+      status: 'processing',
     });
-  } catch (err) {
-    console.error('Incident details error:', err);
-    res.status(500).json({ error: err.message });
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
-// Route: Polygons (v2 feature)
-const polygonsRouter = require('./routes/polygons');
-app.use('/polygons', polygonsRouter);
+// Document extraction endpoint
+app.post('/api/documents/extract', authenticateToken, async (req, res) => {
+  try {
+    const { document_id } = req.body;
+    
+    if (!document_id) {
+      return res.status(400).json({ error: 'Missing document_id' });
+    }
 
-// WebSocket Connections
-io.on('connection', (socket) => {
-  console.log(`🔗 Socket connected: ${socket.id}`);
-  
-  socket.on('join-incident', (incidentId, callback) => {
-    socket.join(`incident:${incidentId}`);
-    console.log(`📍 Socket ${socket.id} joined incident ${incidentId}`);
-    if (callback) callback({ ok: true });
-  });
-
-  socket.on('resource:update', async (data) => {
-    console.log(`📦 Resource update:`, data);
-    io.to(`incident:${data.incident_id}`).emit('resource:updated', data);
-  });
-
-  socket.on('marker:add', async (data) => {
-    console.log(`📌 Marker added:`, data);
-    io.to(`incident:${data.incident_id}`).emit('marker:added', data);
-  });
-
-  socket.on('disconnect', () => {
-    console.log(`🔓 Socket disconnected: ${socket.id}`);
-  });
+    // TODO: Call OCR service and return extracted data
+    res.json({
+      success: true,
+      document_id,
+      extracted_data: {
+        firstName: '',
+        lastName: '',
+        dateOfBirth: '',
+        confidence: {},
+      },
+      status: 'pending',
+    });
+  } catch (error) {
+    console.error('Extraction error:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
-// Error handler
+// Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Error:', err);
-  res.status(500).json({ error: 'Internal Server Error' });
+  res.status(500).json({ error: err.message });
 });
 
-server.listen(3000, '0.0.0.0', () => {
-  console.log('🎯 Stabs-API v2.0.0-dev running on port 3000');
-  console.log('✨ v2 Features: Polygon Drawing, GPS Tracking, PDF Reports');
-  console.log('🔒 DSGVO-compliant • CORS enabled • Audit-Logging');
-  console.log('🔌 Socket.io path: /api/socket.io/');
+// Server startup
+app.listen(PORT, () => {
+  console.log(`🚀 API Server running on http://localhost:${PORT}`);
+  console.log(`Health check: http://localhost:${PORT}/health`);
 });
 
-module.exports = { app, server, io };
+module.exports = app;
