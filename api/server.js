@@ -7,6 +7,7 @@ const crypto = require('crypto');
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
+  path: '/api/socket.io/',
   cors: { 
     origin: "*",
     methods: ["GET", "POST", "OPTIONS"],
@@ -154,6 +155,7 @@ server.listen(3000, '0.0.0.0', () => {
   console.log('🎯 Stabs-API v2.0.0-dev running on port 3000');
   console.log('✨ v2 Features: Polygon Drawing, GPS Tracking, PDF Reports');
   console.log('🔒 DSGVO-compliant • CORS enabled • Audit-Logging');
+  console.log('🔌 Socket.io path: /api/socket.io/');
 });
 
 module.exports = { app, server, io };
