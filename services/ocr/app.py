@@ -14,6 +14,7 @@ from flask_cors import CORS
 from io import BytesIO
 import base64
 import logging
+from datetime import datetime
 
 app = Flask(__name__)
 CORS(app)
@@ -91,7 +92,6 @@ class DocumentOCR:
     def extract_entities(self, text):
         """Extract structured entities from OCR text"""
         import re
-        from datetime import datetime
         
         entities = {
             'firstName': self._extract_name(text, 'first'),
