@@ -339,6 +339,13 @@ createApp({
     const polygonError = ref('');
     const polygonSuccess = ref('');
 
+    // Get API base URL
+    const getApiUrl = () => {
+      const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
+      const hostname = window.location.hostname;
+      return `${protocol}//${hostname}:3000`;
+    };
+
     const initMap = () => {
       console.log('[Leaflet] Initializing map...');
       map.value = L.map('map').setView([51.505, 10.09], 6);
@@ -383,7 +390,8 @@ createApp({
       }
 
       try {
-        const res = await fetch('/api/polygons', {
+        const apiUrl = getApiUrl();
+        const res = await fetch(`${apiUrl}/api/polygons`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ incident_id: selectedIncident.value.id, coordinates: polygonCoordinates.value, type: 'operational_area' })
@@ -400,11 +408,15 @@ createApp({
 
     const loadIncidents = async () => {
       try {
-        const res = await fetch('/api/incidents');
+        const apiUrl = getApiUrl();
+        console.log(`[API] Loading incidents from ${apiUrl}/api/incidents`);
+        const res = await fetch(`${apiUrl}/api/incidents`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         incidents.value = await res.json();
+        console.log('[API] Incidents loaded:', incidents.value);
         if (incidents.value.length > 0) selectIncident(incidents.value[0]);
       } catch (err) {
-        console.error('Error loading incidents:', err);
+        console.error('[API] Error loading incidents:', err);
       }
     };
 
@@ -415,10 +427,7 @@ createApp({
     };
 
     const connectSocket = () => {
-      const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
-      const hostname = window.location.hostname;
-      const apiUrl = `${protocol}//${hostname}:3000`;
-      
+      const apiUrl = getApiUrl();
       console.log(`[Socket.io] Connecting to: ${apiUrl}`);
       
       socket.value = io(apiUrl, {
