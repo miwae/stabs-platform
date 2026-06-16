@@ -69,6 +69,19 @@
     .status {
       font-size: 11px;
       color: #666;
+      padding: 5px;
+      background: #f0f0f0;
+      border-radius: 3px;
+    }
+
+    .status.online {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .status.offline {
+      background: #f8d7da;
+      color: #721c24;
     }
 
     .section {
@@ -229,7 +242,9 @@
     <!-- Header -->
     <div class="header">
       <h1>🎯 Stabs-Platform v2</h1>
-      <div class="status">{{ connected ? '✅ Online' : '⚫ Offline' }}</div>
+      <div :class="['status', connected ? 'online' : 'offline']">
+        {{ connected ? '✅ Online' : '❌ Offline' }}
+      </div>
     </div>
 
     <!-- User Info -->
@@ -394,9 +409,34 @@ createApp({
     };
 
     const connectSocket = () => {
-      socket.value = io();
-      socket.value.on('connect', () => { connected.value = true; });
-      socket.value.on('disconnect', () => { connected.value = false; });
+      // Get API URL (assume API runs on port 3000)
+      const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
+      const hostname = window.location.hostname;
+      const apiUrl = `${protocol}//${hostname}:3000`;
+      
+      console.log(`[Socket.io] Connecting to: ${apiUrl}`);
+      
+      socket.value = io(apiUrl, {
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        reconnectionAttempts: 10,
+        transports: ['websocket', 'polling']
+      });
+      
+      socket.value.on('connect', () => {
+        console.log('✅ Socket connected');
+        connected.value = true;
+      });
+      
+      socket.value.on('disconnect', () => {
+        console.log('❌ Socket disconnected');
+        connected.value = false;
+      });
+      
+      socket.value.on('connect_error', (error) => {
+        console.error('Socket error:', error);
+      });
     };
 
     const logout = () => {
@@ -405,7 +445,7 @@ createApp({
       if (socket.value) socket.value.disconnect();
     };
 
-    // Simulate login for now
+    // Initialize on mount
     onMounted(() => {
       initMap();
       // Auto-login demo
