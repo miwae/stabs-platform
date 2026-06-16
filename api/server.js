@@ -3,10 +3,20 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const jwt = require('jsonwebtoken');
 const { Pool } = require('pg');
+const http = require('http');
+const { Server } = require('socket.io');
 
 dotenv.config();
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST'],
+  },
+});
+
 const PORT = process.env.PORT || 3000;
 
 // Middleware
@@ -25,7 +35,7 @@ const pool = new Pool({
 // Logger middleware
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
-  next();
+  next()
 });
 
 // JWT Auth middleware
@@ -41,6 +51,33 @@ const authenticateToken = (req, res, next) => {
     next();
   });
 };
+
+// Socket.io connection handler
+io.on('connection', (socket) => {
+  console.log(`[Socket.io] Client connected: ${socket.id}`);
+
+  // Handle document upload
+  socket.on('document:upload', (data) => {
+    console.log(`[Socket.io] Document upload: ${data.filename}`);
+    socket.emit('document:uploading', { status: 'processing' });
+  });
+
+  // Handle document extraction
+  socket.on('document:extract', (data) => {
+    console.log(`[Socket.io] Document extract: ${data.document_id}`);
+    socket.emit('document:extracting', { status: 'processing' });
+  });
+
+  // Handle disconnect
+  socket.on('disconnect', () => {
+    console.log(`[Socket.io] Client disconnected: ${socket.id}`);
+  });
+
+  // Handle errors
+  socket.on('error', (error) => {
+    console.error(`[Socket.io] Error from ${socket.id}:`, error);
+  });
+});
 
 // Health check
 app.get('/health', (req, res) => {
@@ -116,9 +153,10 @@ app.use((err, req, res, next) => {
 });
 
 // Server startup
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`🚀 API Server running on http://localhost:${PORT}`);
   console.log(`Health check: http://localhost:${PORT}/health`);
+  console.log(`WebSocket: ws://localhost:${PORT}`);
 });
 
-module.exports = app;
+module.exports = { app, server, io };
