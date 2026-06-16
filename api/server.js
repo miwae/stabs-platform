@@ -49,10 +49,10 @@ const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
-  if (!token) return res.sendStatus(401);
+  if (!token) return res.status(401).json({ error: 'No token provided' });
 
   jwt.verify(token, process.env.JWT_SECRET || 'test-secret', (err, user) => {
-    if (err) return res.sendStatus(403);
+    if (err) return res.status(403).json({ error: 'Invalid token' });
     req.user = user;
     next();
   });
@@ -60,7 +60,7 @@ const authenticateToken = (req, res, next) => {
 
 // ============ REST API ROUTES ============
 
-// Health check
+// Health check (NO AUTH)
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok', 
@@ -70,7 +70,7 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Login endpoint (for testing)
+// Login endpoint (NO AUTH)
 app.post('/auth/login', (req, res) => {
   const token = jwt.sign(
     { user_id: 'demo-user', username: 'demo' }, 
@@ -93,11 +93,12 @@ app.get('/api/health', authenticateToken, (req, res) => {
   });
 });
 
-// Mock incidents endpoint
-app.get('/api/incidents', authenticateToken, (req, res) => {
+// Mock incidents endpoint (NO AUTH - public)
+app.get('/api/incidents', (req, res) => {
   res.json([
     { id: 1, name: 'Einsatz A', status: 'active' },
-    { id: 2, name: 'Einsatz B', status: 'planning' }
+    { id: 2, name: 'Einsatz B', status: 'planning' },
+    { id: 3, name: 'Einsatz C', status: 'completed' }
   ]);
 });
 
@@ -159,6 +160,7 @@ httpServer.listen(PORT, '0.0.0.0', () => {
   console.log(`\n🚀 API Server running on http://0.0.0.0:${PORT}`);
   console.log(`📡 WebSocket: ws://0.0.0.0:${PORT}`);
   console.log(`🏥 Health: http://0.0.0.0:${PORT}/health`);
+  console.log(`📋 Incidents: http://0.0.0.0:${PORT}/api/incidents (public)`);
   console.log(`🔌 Socket.io enabled with transports: websocket, polling\n`);
 });
 
